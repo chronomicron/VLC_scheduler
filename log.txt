@@ -19,3 +19,33 @@
 2024-06-30 23:27:21,755 - INFO - Stopped media.
 2024-06-30 23:27:21,815 - INFO - Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 06 [480p].mkv
 2024-06-30 23:27:26,153 - INFO - Stopped media.
+2024-07-01 09:50:46,965 - INFO - Started playing: F:/@JAnime/Shield/tate no yuusha S01\Tate no Yuusha no Nariagari - Episode_018.mkv
+2024-07-01 09:51:04,599 - INFO - Entered full screen mode.
+2024-07-01 09:51:06,327 - INFO - Exited full screen mode.
+2024-07-01 09:51:16,948 - INFO - Stopped media.
+2024-07-01 10:09:36,462 - INFO - Attempting to play media at 10:09
+2024-07-01 10:09:36,521 - INFO - Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 24 [480p].mkv
+2024-07-01 10:09:52,517 - INFO - Attempting to play media at 10:09
+2024-07-01 10:09:52,778 - INFO - Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 07 [480p].mkv
+2024-07-01 10:09:52,778 - INFO - Next media action triggered.
+2024-07-01 10:10:07,818 - INFO - Stopped media.
+2024-07-01 10:10:39,045 - INFO - Attempting to play media at 10:10
+2024-07-01 10:10:39,101 - INFO - Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 07 [480p].mkv
+2024-07-01 10:10:45,966 - INFO - Attempting to play media at 10:10
+2024-07-01 10:10:46,239 - INFO - Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 05 [480p].mkv
+2024-07-01 10:10:46,239 - INFO - Next media action triggered.
+2024-07-01 10:10:51,302 - INFO - Toggled fullscreen mode.
+2024-07-01 10:10:52,077 - INFO - Toggled fullscreen mode.
+2024-07-01 10:10:56,398 - INFO - Previous media action triggered.
+2024-07-01 10:11:08,090 - INFO - Stopped media.
+2024-07-01 10:31:25,078:INFO:Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 15 [480p].mkv
+2024-07-01 10:32:23,604:INFO:Created VLC_scheduler.txt in F:/@JAnime/Gyakkyou Burai Kaiji/Gyakkyou Burai Kaiji - Hakairoku Hen
+2024-07-01 10:32:23,620:INFO:Created VLC_scheduler.txt in F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)
+2024-07-01 10:32:23,622:INFO:Created VLC_scheduler.txt in F:/@JAnime/DanMachi/[VCB-Studio] DanMachi [720p]
+2024-07-01 10:32:23,625:INFO:Created VLC_scheduler.txt in F:/@JAnime/DanMachi/DanMachiS02
+2024-07-01 10:32:23,626:INFO:Created VLC_scheduler.txt in F:/@JAnime/Goblin Slayer/[UF+] GOBLIN SLAYER - 03 [WEBrip 720p]
+2024-07-01 10:32:23,629:INFO:Created VLC_scheduler.txt in F:/@JAnime/OnePunch Season 2
+2024-07-01 10:32:23,641:INFO:Created VLC_scheduler.txt in F:/@JAnime/Spy x Family
+2024-07-01 10:32:23,645:INFO:Created VLC_scheduler.txt in F:/@JAnime/Tensei shitara Slime Datta Ken
+2024-07-01 10:33:21,630:INFO:Toggled fullscreen mode: True
+2024-07-01 10:33:22,741:INFO:Toggled fullscreen mode: False
