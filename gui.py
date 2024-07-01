@@ -42,6 +42,7 @@ class VLC_GUI:
         self.player = None  # VLC media player instance
         self.is_fullscreen = False  # Fullscreen toggle status
         self.current_media = None  # Currently playing media file path
+        self.continuous_play = False  # Continuous play status
         
         # Initialize and place media control buttons
         self.create_media_controls()
@@ -113,13 +114,13 @@ class VLC_GUI:
         self.currently_playing_label = ttk.Label(self.bottom_frame, text="Currently playing: None")
         self.currently_playing_label.grid(row=0, column=0, columnspan=6, sticky="w")
 
-        play_button = ttk.Button(self.bottom_frame, text="Play", command=self.play_media)
+        play_button = ttk.Button(self.bottom_frame, text="Play", command=self.start_continuous_play)
         play_button.grid(row=1, column=0, padx=5, pady=5)
 
         pause_button = ttk.Button(self.bottom_frame, text="Pause", command=self.pause_media)
         pause_button.grid(row=1, column=1, padx=5, pady=5)
 
-        stop_button = ttk.Button(self.bottom_frame, text="Stop", command=self.stop_media)
+        stop_button = ttk.Button(self.bottom_frame, text="Stop", command=self.stop_continuous_play)
         stop_button.grid(row=1, column=2, padx=5, pady=5)
 
         previous_button = ttk.Button(self.bottom_frame, text="Previous", command=self.previous_media)
@@ -159,6 +160,14 @@ class VLC_GUI:
             self.load_schedule()  # Refresh the schedule display
             logging.info(f"Updated {section} path to: {new_path}")
 
+    def start_continuous_play(self):
+        """
+        Start continuous play mode where videos are played non-stop based on the schedule.
+        """
+        self.continuous_play = True
+        self.play_media()
+        logging.info("Started continuous play mode.")
+
     def play_media(self):
         """
         Play a random media file from the current schedule based on the current time.
@@ -170,9 +179,8 @@ class VLC_GUI:
                 stop_time = self.config[section]['stop']
                 if start_time <= current_time <= stop_time:
                     media_path = self.config[section]['path']
-                    media_files = [os.path.join(media_path, f) for f in os.listdir(media_path) if os.path.isfile(os.path.join(media_path, f))]
-                    if media_files:
-                        media_file = random.choice(media_files)
+                    media_file = self.get_next_media_file(media_path)
+                    if media_file:
                         self.current_media = media_file
                         self.currently_playing_label.config(text=f"Currently playing: {media_file}")
                         if self.player is not None:
@@ -181,10 +189,62 @@ class VLC_GUI:
                         self.player.set_media(self.vlc_instance.media_new(media_file))
                         self.player.play()
                         logging.info(f"Playing media: {media_file}")
+                        self.player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.on_media_end)
                     else:
                         logging.error(f"No media files found in: {media_path}")
                     return
         logging.error("No valid schedule found for the current time.")
+
+    def get_next_media_file(self, media_path):
+        """
+        Get the next media file to play from the VLC_scheduler.txt file.
+        
+        Args:
+            media_path (str): The path to the media folder.
+        
+        Returns:
+            str: The path to the next media file to play.
+        """
+        schedule_file = os.path.join(media_path, 'VLC_scheduler.txt')
+        if not os.path.exists(schedule_file):
+            self.create_schedule_file(media_path)
+        
+        with open(schedule_file, 'r') as f:
+            media_files = f.readlines()
+        
+        if not media_files:
+            self.create_schedule_file(media_path)
+            with open(schedule_file, 'r') as f:
+                media_files = f.readlines()
+
+        media_files = [file.strip() for file in media_files if file.strip()]
+        if media_files:
+            next_file = random.choice(media_files)
+            media_files.remove(next_file)
+            with open(schedule_file, 'w') as f:
+                f.writelines(f"{file}\n" for file in media_files)
+            return os.path.join(media_path, next_file)
+        return None
+
+    def create_schedule_file(self, media_path):
+        """
+        Create the VLC_scheduler.txt file in the specified media path with a directory listing.
+        
+        Args:
+            media_path (str): The path to the media folder.
+        """
+        with open(os.path.join(media_path, 'VLC_scheduler.txt'), 'w') as f:
+            for item in os.listdir(media_path):
+                if os.path.isfile(os.path.join(media_path, item)):
+                    f.write(f"{item}\n")
+        logging.info(f"Created VLC_scheduler.txt in {media_path}")
+
+    def on_media_end(self, event):
+        """
+        Event handler for when a media file ends.
+        """
+        if self.continuous_play:
+            self.play_media()
 
     def pause_media(self):
         """
@@ -192,34 +252,33 @@ class VLC_GUI:
         """
         if self.player is not None:
             self.player.pause()
-            logging.info("Paused media playback.")
+            logging.info("Paused media.")
 
-    def stop_media(self):
+    def stop_continuous_play(self):
         """
-        Stop the currently playing media.
+        Stop continuous play mode and the currently playing media.
         """
         if self.player is not None:
             self.player.stop()
-            self.currently_playing_label.config(text="Currently playing: None")
-            logging.info("Stopped media playback.")
+        self.continuous_play = False
+        self.currently_playing_label.config(text="Currently playing: None")
+        logging.info("Stopped continuous play mode.")
 
     def previous_media(self):
         """
-        Play the previous media file in the current directory.
+        Play the previous media file (not implemented in this example).
         """
-        self.play_media()
-        logging.info("Previous media action triggered.")
+        pass
 
     def next_media(self):
         """
-        Play the next media file in the current directory.
+        Play the next media file.
         """
         self.play_media()
-        logging.info("Next media action triggered.")
 
     def toggle_fullscreen(self):
         """
-        Toggle fullscreen mode for the VLC media player.
+        Toggle fullscreen mode for the VLC player.
         """
         if self.player is not None:
             self.is_fullscreen = not self.is_fullscreen
@@ -235,10 +294,7 @@ class VLC_GUI:
             if section.startswith('Schedule_'):
                 path = self.config[section]['path']
                 if os.path.exists(path):
-                    with open(os.path.join(path, 'VLC_scheduler.txt'), 'w') as f:
-                        for item in os.listdir(path):
-                            f.write(f"{item}\n")
-                    logging.info(f"Created VLC_scheduler.txt in {path}")
+                    self.create_schedule_file(path)
                 else:
                     logging.error(f"Path does not exist: {path}")
 
