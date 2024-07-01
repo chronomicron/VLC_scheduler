@@ -14,3 +14,8 @@
 2024-06-30 23:05:10,808:INFO:Stopped media.
 2024-06-30 23:12:02,377:INFO:Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 02 [480p].mkv
 2024-06-30 23:12:36,616:INFO:Stopped media.
+2024-06-30 23:27:07,552 - INFO - Reinitialize called - placeholder function
+2024-06-30 23:27:16,873 - INFO - Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 05 [480p].mkv
+2024-06-30 23:27:21,755 - INFO - Stopped media.
+2024-06-30 23:27:21,815 - INFO - Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 06 [480p].mkv
+2024-06-30 23:27:26,153 - INFO - Stopped media.

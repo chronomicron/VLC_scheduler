@@ -27,6 +27,9 @@ class VLC_GUI:
         self.root = tk.Tk()
         self.root.title("VLC Scheduler")
 
+        # Create the menu bar
+        self.create_menu()
+
         # Create top frame for VLC path
         self.top_frame = ttk.LabelFrame(self.root, text="Path to VLC Player Folder", padding="10")
         self.top_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
@@ -53,6 +56,28 @@ class VLC_GUI:
         ttk.Button(self.bottom_frame, text="Full Screen", command=self.toggle_fullscreen).grid(row=1, column=5, padx=5, pady=5)
         
         self.player = None  # VLC media player instance
+
+    def create_menu(self):
+        """
+        Create the top menu bar with 'File' and 'Controls' menus.
+        """
+        menubar = tk.Menu(self.root)
+        
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=file_menu)
+        
+        controls_menu = tk.Menu(menubar, tearoff=0)
+        controls_menu.add_command(label="Reinitialize", command=self.reinitialize)
+        menubar.add_cascade(label="Controls", menu=controls_menu)
+        
+        self.root.config(menu=menubar)
+
+    def reinitialize(self):
+        """
+        Placeholder function for reinitializing the application.
+        """
+        logging.info("Reinitialize called - placeholder function")
 
     def populate_frames(self):
         """
@@ -207,3 +232,26 @@ class VLC_GUI:
         except Exception as e:
             logging.error(f"Failed to toggle full screen mode: {e}")
             messagebox.showerror("Error", f"Failed to toggle full screen mode: {e}")
+
+    def run(self):
+        """Run the Tkinter main loop."""
+        self.root.mainloop()
+
+
+if __name__ == "__main__":
+    import configparser
+
+    # Configure logging
+    logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    # Read settings from settings.ini
+    settings_file = "settings.ini"
+    config = configparser.ConfigParser()
+    config.read(settings_file)
+
+    # Initialize VLC instance
+    vlc_instance = vlc.Instance()
+
+    # Start the GUI
+    app = VLC_GUI(config, settings_file, vlc_instance)
+    app.run()
