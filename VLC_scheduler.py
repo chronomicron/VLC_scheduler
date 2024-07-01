@@ -1,54 +1,44 @@
 import os
+import sys
 import configparser
-import vlc  # if you do not have vlc module installed please use the command `pip install python-vlc`
-from datetime import datetime
+import logging
+import vlc
 from gui import VLC_GUI
-import random
 
-# Define the path to the settings file
-SETTINGS_FILE = 'settings.ini'
+# Initialize logging
+logging.basicConfig(filename='log.txt', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-def load_settings():
+def load_settings(settings_file):
     """
-    Load settings from the ini file.
-
-    Returns:
-        configparser.ConfigParser: Config object containing the settings.
-    """
-    config = configparser.ConfigParser()
-    
-    # Check if the settings file exists
-    if os.path.exists(SETTINGS_FILE):
-        config.read(SETTINGS_FILE)
-        return config
-    else:
-        raise FileNotFoundError(f"{SETTINGS_FILE} does not exist. Please create it with the necessary settings.")
-
-def initialize_vlc(vlc_path):
-    """
-    Initialize VLC using its API.
+    Load the settings from the ini file.
 
     Args:
-        vlc_path (str): Path to the VLC executable.
+        settings_file (str): The path to the settings file.
 
     Returns:
-        vlc.Instance: VLC instance.
+        configparser.ConfigParser: The loaded settings.
     """
-    # Create VLC instance with the specified VLC path
-    instance = vlc.Instance(vlc_path)
-    return instance
+    settings = configparser.ConfigParser()
+    if os.path.exists(settings_file):
+        settings.read(settings_file)
+    else:
+        logging.error(f"Settings file {settings_file} not found.")
+        sys.exit(1)
+    return settings
+
+def main():
+    """
+    Main function to initialize and run the VLC Scheduler.
+    """
+    settings_file = 'settings.ini'
+    settings = load_settings(settings_file)
+
+    vlc_instance = vlc.Instance()
+
+    gui = VLC_GUI(settings, settings_file, vlc_instance)
+    logging.info("VLC Scheduler started.")
+    gui.run()
 
 if __name__ == "__main__":
-    try:
-        # Load settings from the settings.ini file
-        settings = load_settings()
-        
-        # Initialize VLC
-        vlc_path = settings['Paths']['vlc_path']
-        vlc_instance = initialize_vlc(vlc_path)
-        
-        # Launch the GUI and pass the settings and VLC instance
-        app = VLC_GUI(settings, SETTINGS_FILE, vlc_instance)
-        app.run()
-    except Exception as e:
-        print(f"Error: {e}")
+    main()

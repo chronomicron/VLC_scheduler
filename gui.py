@@ -4,6 +4,7 @@ import vlc  # if you do not have vlc module installed please use the command `pi
 import configparser
 import os
 import random
+import logging
 from datetime import datetime
 
 class VLC_GUI:
@@ -75,18 +76,17 @@ class VLC_GUI:
             section (str): The section in the settings file.
             key (str): The key in the settings file to be updated.
         """
-        # Open a directory chooser dialog
-        new_path = filedialog.askdirectory(title="Select Folder")
-        if new_path:
-            # Update the settings in memory
-            self.settings.set(section, key, new_path)
-            
-            # Save the updated settings to the ini file
-            with open(self.settings_file, 'w') as configfile:
-                self.settings.write(configfile)
-            
-            # Refresh the GUI to reflect the new path
-            self.populate_main_frame()
+        try:
+            new_path = filedialog.askdirectory(title="Select Folder")
+            if new_path:
+                self.settings.set(section, key, new_path)
+                with open(self.settings_file, 'w') as configfile:
+                    self.settings.write(configfile)
+                self.populate_main_frame()
+                logging.info(f"Updated path for {key} in section {section} to {new_path}")
+        except Exception as e:
+            logging.error(f"Failed to edit path for {key} in section {section}: {e}")
+            messagebox.showerror("Error", f"Failed to edit path: {e}")
 
     def edit_schedule_path(self, section, key):
         """
@@ -96,89 +96,107 @@ class VLC_GUI:
             section (str): The section in the settings file.
             key (str): The key in the settings file to be updated.
         """
-        # Open a directory chooser dialog
-        new_path = filedialog.askdirectory(title="Select Folder")
-        if new_path:
-            # Parse the existing value to replace the path part
-            times, _ = self.settings.get(section, key).split(',')
-            new_value = f"{times},{new_path}"
-            
-            # Update the settings in memory
-            self.settings.set(section, key, new_value)
-            
-            # Save the updated settings to the ini file
-            with open(self.settings_file, 'w') as configfile:
-                self.settings.write(configfile)
-            
-            # Refresh the GUI to reflect the new path
-            self.populate_main_frame()
+        try:
+            new_path = filedialog.askdirectory(title="Select Folder")
+            if new_path:
+                times, _ = self.settings.get(section, key).split(',')
+                new_value = f"{times},{new_path}"
+                self.settings.set(section, key, new_value)
+                with open(self.settings_file, 'w') as configfile:
+                    self.settings.write(configfile)
+                self.populate_main_frame()
+                logging.info(f"Updated schedule path for {key} in section {section} to {new_path}")
+        except Exception as e:
+            logging.error(f"Failed to edit schedule path for {key} in section {section}: {e}")
+            messagebox.showerror("Error", f"Failed to edit schedule path: {e}")
 
     def play_media(self):
         """
         Play a random media file from the current schedule's paths.
         """
-        # Get the current time
-        current_time = datetime.now().strftime("%H:%M")
-        
-        # Find the corresponding schedule
-        for key, value in self.settings.items('Schedule'):
-            times, path = value.split(',')
-            start_time, end_time = times.split('-')
-            
-            if start_time <= current_time <= end_time:
-                # Get a list of media files in the folder
-                media_files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        try:
+            current_time = datetime.now().strftime("%H:%M")
+            for key, value in self.settings.items('Schedule'):
+                times, path = value.split(',')
+                start_time, end_time = times.split('-')
                 
-                if media_files:
-                    # Choose a random media file
-                    media_file = random.choice(media_files)
-                    
-                    # Play the media file using VLC
-                    self.player = self.vlc_instance.media_player_new()
-                    media = self.vlc_instance.media_new(media_file)
-                    self.player.set_media(media)
-                    self.player.play()
-                    
-                    # Update currently playing label
-                    self.current_media_path = media_file
-                    self.currently_playing_label.config(text=f"Currently playing: {media_file}")
-                else:
-                    messagebox.showerror("Error", f"No media files found in {path}")
-                return
-        
-        messagebox.showerror("Error", "No schedule matches the current time.")
+                if start_time <= current_time <= end_time:
+                    media_files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                    if media_files:
+                        media_file = random.choice(media_files)
+                        self.player = self.vlc_instance.media_player_new()
+                        media = self.vlc_instance.media_new(media_file)
+                        self.player.set_media(media)
+                        self.player.play()
+                        self.current_media_path = media_file
+                        self.currently_playing_label.config(text=f"Currently playing: {media_file}")
+                        logging.info(f"Started playing: {media_file}")
+                    else:
+                        logging.error(f"No media files found in {path}")
+                        messagebox.showerror("Error", f"No media files found in {path}")
+                    return
+            logging.error("No schedule matches the current time.")
+            messagebox.showerror("Error", "No schedule matches the current time.")
+        except Exception as e:
+            logging.error(f"Failed to play media: {e}")
+            messagebox.showerror("Error", f"Failed to play media: {e}")
 
     def pause_media(self):
         """Pause the currently playing media."""
-        if self.player:
-            self.player.pause()
+        try:
+            if self.player:
+                self.player.pause()
+                logging.info("Paused media.")
+        except Exception as e:
+            logging.error(f"Failed to pause media: {e}")
+            messagebox.showerror("Error", f"Failed to pause media: {e}")
 
     def stop_media(self):
         """Stop the currently playing media."""
-        if self.player:
-            self.player.stop()
-            self.currently_playing_label.config(text="Currently playing: None")
+        try:
+            if self.player:
+                self.player.stop()
+                self.currently_playing_label.config(text="Currently playing: None")
+                logging.info("Stopped media.")
+        except Exception as e:
+            logging.error(f"Failed to stop media: {e}")
+            messagebox.showerror("Error", f"Failed to stop media: {e}")
 
     def next_media(self):
         """Stop the current media and play the next one in the folder."""
-        if self.player:
-            self.player.stop()
-            self.play_media()
+        try:
+            if self.player:
+                self.player.stop()
+                self.play_media()
+                logging.info("Playing next media.")
+        except Exception as e:
+            logging.error(f"Failed to play next media: {e}")
+            messagebox.showerror("Error", f"Failed to play next media: {e}")
 
     def previous_media(self):
         """Stop the current media and play the previous one in the folder."""
-        # Placeholder for previous functionality
-        messagebox.showinfo("Info", "Previous functionality is not implemented yet.")
+        try:
+            messagebox.showinfo("Info", "Previous functionality is not implemented yet.")
+            logging.info("Previous media functionality not implemented.")
+        except Exception as e:
+            logging.error(f"Failed to execute previous media functionality: {e}")
+            messagebox.showerror("Error", f"Failed to execute previous media functionality: {e}")
 
     def toggle_fullscreen(self):
         """Toggle the VLC media player between full screen and windowed mode."""
-        if self.player:
-            if self.is_fullscreen:
-                self.player.set_fullscreen(False)
-                self.is_fullscreen = False
-            else:
-                self.player.set_fullscreen(True)
-                self.is_fullscreen = True
+        try:
+            if self.player:
+                if self.is_fullscreen:
+                    self.player.set_fullscreen(False)
+                    self.is_fullscreen = False
+                    logging.info("Exited full screen mode.")
+                else:
+                    self.player.set_fullscreen(True)
+                    self.is_fullscreen = True
+                    logging.info("Entered full screen mode.")
+        except Exception as e:
+            logging.error(f"Failed to toggle full screen: {e}")
+            messagebox.showerror("Error", f"Failed to toggle full screen: {e}")
 
     def run(self):
         """Run the GUI main loop."""

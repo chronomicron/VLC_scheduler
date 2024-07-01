@@ -1,0 +1,5 @@
+2024-06-30 19:38:15,216 - INFO - VLC Scheduler started.
+2024-06-30 19:38:28,336 - INFO - Started playing: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 19 [480p].mkv
+2024-06-30 19:38:55,355 - INFO - Entered full screen mode.
+2024-06-30 19:39:00,731 - INFO - Exited full screen mode.
+2024-06-30 19:39:22,530 - INFO - Stopped media.
