@@ -3,3 +3,14 @@
 2024-06-30 19:38:55,355 - INFO - Entered full screen mode.
 2024-06-30 19:39:00,731 - INFO - Exited full screen mode.
 2024-06-30 19:39:22,530 - INFO - Stopped media.
+2024-06-30 22:43:15,036 - INFO - VLC Scheduler started.
+2024-06-30 22:43:28,402 - INFO - Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 12 [480p].mkv
+2024-06-30 22:44:28,097 - INFO - Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 03 [480p].mkv
+2024-06-30 22:44:28,098 - INFO - Playing next media.
+2024-06-30 22:45:24,977 - INFO - Stopped media.
+2024-06-30 22:51:18,249 - INFO - VLC Scheduler started.
+2024-06-30 23:03:03,445 - INFO - VLC Scheduler started.
+2024-06-30 23:05:00,714:INFO:Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 11 [480p].mkv
+2024-06-30 23:05:10,808:INFO:Stopped media.
+2024-06-30 23:12:02,377:INFO:Started playing: F:/@JAnime/VinelandSaga\[HorribleSubs] Vinland Saga - 02 [480p].mkv
+2024-06-30 23:12:36,616:INFO:Stopped media.

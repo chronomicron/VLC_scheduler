@@ -1,11 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import vlc  # if you do not have vlc module installed please use the command `pip install python-vlc`
-import configparser
-import os
-import random
 import logging
 from datetime import datetime
+import os
+import random
+
 
 class VLC_GUI:
     def __init__(self, settings, settings_file, vlc_instance):
@@ -26,47 +26,57 @@ class VLC_GUI:
         # Create the main window
         self.root = tk.Tk()
         self.root.title("VLC Scheduler")
+
+        # Create top frame for VLC path
+        self.top_frame = ttk.LabelFrame(self.root, text="Path to VLC Player Folder", padding="10")
+        self.top_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+
+        # Create middle frame for schedule
+        self.middle_frame = ttk.LabelFrame(self.root, text="Schedule", padding="10")
+        self.middle_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+
+        # Create bottom frame for media control buttons
+        self.bottom_frame = ttk.LabelFrame(self.root, text="Media Controls", padding="10")
+        self.bottom_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
         
-        # Create the main frame
-        self.main_frame = ttk.Frame(self.root, padding="10")
-        self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        self.populate_main_frame()
+        self.populate_frames()
         
         # Media control buttons
-        control_frame = ttk.Frame(self.root, padding="10")
-        control_frame.grid(row=self.main_frame.grid_size()[1], column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        self.currently_playing_label = ttk.Label(control_frame, text="Currently playing: None")
+        self.currently_playing_label = ttk.Label(self.bottom_frame, text="Currently playing: None")
         self.currently_playing_label.grid(row=0, column=0, columnspan=6, sticky=tk.W, pady=(5, 5))
 
-        ttk.Button(control_frame, text="Play", command=self.play_media).grid(row=1, column=0, padx=5, pady=5)
-        ttk.Button(control_frame, text="Pause", command=self.pause_media).grid(row=1, column=1, padx=5, pady=5)
-        ttk.Button(control_frame, text="Stop", command=self.stop_media).grid(row=1, column=2, padx=5, pady=5)
-        ttk.Button(control_frame, text="Next", command=self.next_media).grid(row=1, column=3, padx=5, pady=5)
-        ttk.Button(control_frame, text="Previous", command=self.previous_media).grid(row=1, column=4, padx=5, pady=5)
-        ttk.Button(control_frame, text="Full Screen", command=self.toggle_fullscreen).grid(row=1, column=5, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Play", command=self.play_media).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Pause", command=self.pause_media).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Stop", command=self.stop_media).grid(row=1, column=2, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Next", command=self.next_media).grid(row=1, column=3, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Previous", command=self.previous_media).grid(row=1, column=4, padx=5, pady=5)
+        ttk.Button(self.bottom_frame, text="Full Screen", command=self.toggle_fullscreen).grid(row=1, column=5, padx=5, pady=5)
         
         self.player = None  # VLC media player instance
 
-    def populate_main_frame(self):
+    def populate_frames(self):
         """
-        Populate the main frame with settings information and edit buttons.
+        Populate the top and middle frames with settings information and edit buttons.
         """
-        for widget in self.main_frame.winfo_children():
+        for widget in self.top_frame.winfo_children():
+            widget.destroy()
+        for widget in self.middle_frame.winfo_children():
             widget.destroy()
         
         row = 0
         for section in self.settings.sections():
-            ttk.Label(self.main_frame, text=f"[{section}]", font=("Helvetica", 12, "bold")).grid(row=row, column=0, sticky=tk.W, pady=(5, 2))
-            row += 1
-            for key, value in self.settings.items(section):
-                ttk.Label(self.main_frame, text=f"{key}: {value}").grid(row=row, column=0, sticky=tk.W)
-                if key.endswith("_path"):
-                    ttk.Button(self.main_frame, text="Edit", command=lambda k=key, s=section: self.edit_path(s, k)).grid(row=row, column=1, sticky=tk.W)
-                if section == 'Schedule':
-                    ttk.Button(self.main_frame, text="Edit", command=lambda k=key, s=section: self.edit_schedule_path(s, k)).grid(row=row, column=1, sticky=tk.W)
-                row += 1
+            if section == 'Paths':
+                for key, value in self.settings.items(section):
+                    if key == "vlc_path":
+                        ttk.Label(self.top_frame, text=f"{key.replace('_', ' ').title()}: {value}").grid(row=row, column=0, sticky=tk.W)
+                        ttk.Button(self.top_frame, text="Edit", command=lambda k=key, s=section: self.edit_path(s, k)).grid(row=row, column=1, sticky=tk.W)
+                        row += 1
+            elif section == 'Schedule':
+                row = 0
+                for key, value in self.settings.items(section):
+                    ttk.Label(self.middle_frame, text=f"{key.replace('_', ' ').title()}: {value}").grid(row=row, column=0, sticky=tk.W)
+                    ttk.Button(self.middle_frame, text="Edit", command=lambda k=key, s=section: self.edit_schedule_path(s, k)).grid(row=row, column=1, sticky=tk.W)
+                    row += 1
 
     def edit_path(self, section, key):
         """
@@ -82,7 +92,7 @@ class VLC_GUI:
                 self.settings.set(section, key, new_path)
                 with open(self.settings_file, 'w') as configfile:
                     self.settings.write(configfile)
-                self.populate_main_frame()
+                self.populate_frames()
                 logging.info(f"Updated path for {key} in section {section} to {new_path}")
         except Exception as e:
             logging.error(f"Failed to edit path for {key} in section {section}: {e}")
@@ -104,7 +114,7 @@ class VLC_GUI:
                 self.settings.set(section, key, new_value)
                 with open(self.settings_file, 'w') as configfile:
                     self.settings.write(configfile)
-                self.populate_main_frame()
+                self.populate_frames()
                 logging.info(f"Updated schedule path for {key} in section {section} to {new_path}")
         except Exception as e:
             logging.error(f"Failed to edit schedule path for {key} in section {section}: {e}")
@@ -163,27 +173,27 @@ class VLC_GUI:
             messagebox.showerror("Error", f"Failed to stop media: {e}")
 
     def next_media(self):
-        """Stop the current media and play the next one in the folder."""
-        try:
-            if self.player:
-                self.player.stop()
-                self.play_media()
-                logging.info("Playing next media.")
-        except Exception as e:
-            logging.error(f"Failed to play next media: {e}")
-            messagebox.showerror("Error", f"Failed to play next media: {e}")
+        """Play the next media file in the current schedule's paths."""
+        self.stop_media()
+        self.play_media()
 
     def previous_media(self):
-        """Stop the current media and play the previous one in the folder."""
-        try:
-            messagebox.showinfo("Info", "Previous functionality is not implemented yet.")
-            logging.info("Previous media functionality not implemented.")
-        except Exception as e:
-            logging.error(f"Failed to execute previous media functionality: {e}")
-            messagebox.showerror("Error", f"Failed to execute previous media functionality: {e}")
+        """Replay the previous media file."""
+        self.stop_media()
+        if self.current_media_path:
+            try:
+                self.player = self.vlc_instance.media_player_new()
+                media = self.vlc_instance.media_new(self.current_media_path)
+                self.player.set_media(media)
+                self.player.play()
+                self.currently_playing_label.config(text=f"Currently playing: {self.current_media_path}")
+                logging.info(f"Replaying: {self.current_media_path}")
+            except Exception as e:
+                logging.error(f"Failed to replay media: {e}")
+                messagebox.showerror("Error", f"Failed to replay media: {e}")
 
     def toggle_fullscreen(self):
-        """Toggle the VLC media player between full screen and windowed mode."""
+        """Toggle the full screen mode of the VLC player."""
         try:
             if self.player:
                 if self.is_fullscreen:
@@ -195,9 +205,5 @@ class VLC_GUI:
                     self.is_fullscreen = True
                     logging.info("Entered full screen mode.")
         except Exception as e:
-            logging.error(f"Failed to toggle full screen: {e}")
-            messagebox.showerror("Error", f"Failed to toggle full screen: {e}")
-
-    def run(self):
-        """Run the GUI main loop."""
-        self.root.mainloop()
+            logging.error(f"Failed to toggle full screen mode: {e}")
+            messagebox.showerror("Error", f"Failed to toggle full screen mode: {e}")

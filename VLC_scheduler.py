@@ -1,44 +1,38 @@
-import os
-import sys
 import configparser
+import vlc  # if you do not have vlc module installed please use the command `pip install python-vlc`
 import logging
-import vlc
+from datetime import datetime
+import os
+import random
 from gui import VLC_GUI
 
-# Initialize logging
-logging.basicConfig(filename='log.txt', level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-def load_settings(settings_file):
+def setup_logging():
     """
-    Load the settings from the ini file.
-
-    Args:
-        settings_file (str): The path to the settings file.
-
-    Returns:
-        configparser.ConfigParser: The loaded settings.
+    Set up logging configuration to write logs to 'log.txt'.
     """
-    settings = configparser.ConfigParser()
-    if os.path.exists(settings_file):
-        settings.read(settings_file)
-    else:
-        logging.error(f"Settings file {settings_file} not found.")
-        sys.exit(1)
-    return settings
+    logging.basicConfig(filename='log.txt', level=logging.INFO,
+                        format='%(asctime)s:%(levelname)s:%(message)s')
+
 
 def main():
     """
-    Main function to initialize and run the VLC Scheduler.
+    Main function to set up and start the VLC Scheduler GUI.
     """
-    settings_file = 'settings.ini'
-    settings = load_settings(settings_file)
+    setup_logging()
 
+    # Read settings
+    settings_file = 'settings.ini'
+    settings = configparser.ConfigParser()
+    settings.read(settings_file)
+
+    # Create VLC instance
     vlc_instance = vlc.Instance()
 
-    gui = VLC_GUI(settings, settings_file, vlc_instance)
-    logging.info("VLC Scheduler started.")
-    gui.run()
+    # Start GUI
+    app = VLC_GUI(settings, settings_file, vlc_instance)
+    app.root.mainloop()
+
 
 if __name__ == "__main__":
     main()
