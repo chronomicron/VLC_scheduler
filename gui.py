@@ -182,28 +182,39 @@ class VLC_GUI:
                     media_file = self.get_next_media_file(media_path)
                     if media_file:
                         self.current_media = media_file
-                        self.currently_playing_label.config(text=f"Currently playing: {media_file}")
-                        if self.player is not None:
-                            self.player.stop()
-                        self.player = self.vlc_instance.media_player_new()
-                        self.player.set_media(self.vlc_instance.media_new(media_file))
-                        self.player.play()
-                        logging.info(f"Playing media: {media_file}")
-                        self.player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.on_media_end)
+                        self.play_file(media_file)
                     else:
-                        logging.error(f"No media files found in: {media_path}")
-                    return
-        logging.error("No valid schedule found for the current time.")
+                        messagebox.showerror("Error", f"No media files found in: {media_path}")
+                    break
+
+    def play_file(self, media_file):
+        """
+        Play the specified media file using VLC.
+        
+        Args:
+            media_file (str): The path to the media file to be played.
+        """
+        if self.player is None:
+            self.player = self.vlc_instance.media_player_new()
+            self.player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.on_media_end)
+
+        media = self.vlc_instance.media_new(media_file)
+        self.player.set_media(media)
+        self.player.play()
+        self.player.set_fullscreen(True)
+        self.player.set_always_on_top(True)
+        self.currently_playing_label.config(text=f"Currently playing: {os.path.basename(media_file)}")
+        logging.info(f"Playing media: {media_file}")
 
     def get_next_media_file(self, media_path):
         """
-        Get the next media file to play from the VLC_scheduler.txt file.
+        Get the next media file to play from the VLC_scheduler.txt file in the specified path.
         
         Args:
             media_path (str): The path to the media folder.
         
         Returns:
-            str: The path to the next media file to play.
+            str: The path to the next media file to be played.
         """
         schedule_file = os.path.join(media_path, 'VLC_scheduler.txt')
         if not os.path.exists(schedule_file):

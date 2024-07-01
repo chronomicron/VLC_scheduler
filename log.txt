@@ -78,3 +78,14 @@
 2024-07-01 11:28:55,214:INFO:Created VLC_scheduler.txt in F:/@JAnime/Tensei shitara Slime Datta Ken
 2024-07-01 11:29:18,879:INFO:Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 06 [480p].mkv
 2024-07-01 11:29:33,033:INFO:Stopped continuous play mode.
+2024-07-01 14:26:02,679:INFO:Toggled fullscreen mode: True
+2024-07-01 14:26:40,253:INFO:Stopped continuous play mode.
+2024-07-01 14:27:29,303:INFO:Toggled fullscreen mode: True
+2024-07-01 14:27:58,342:INFO:Stopped continuous play mode.
+2024-07-01 14:28:51,959:INFO:Stopped continuous play mode.
+2024-07-01 14:29:11,688:INFO:Toggled fullscreen mode: True
+2024-07-01 14:29:20,382:INFO:Stopped continuous play mode.
+2024-07-01 14:42:18,887:INFO:Toggled fullscreen mode: True
+2024-07-01 14:42:28,991:INFO:Stopped continuous play mode.
+2024-07-01 14:42:38,998:INFO:Toggled fullscreen mode: False
+2024-07-01 14:42:41,721:INFO:Stopped continuous play mode.
