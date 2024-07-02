@@ -135,3 +135,19 @@
 2024-07-01 14:49:06.822406: Error: No media files found in F:/@JAnime/DanMachi/DanMachiS02
 2024-07-01 14:49:06.977719: Error: No media files found in F:/@JAnime/DanMachi/DanMachiS02
 2024-07-01 14:49:07.122959: Error: No media files found in F:/@JAnime/DanMachi/DanMachiS02
+2024-07-01 11:38:49,271:INFO:Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 11 [480p].mkv
+2024-07-01 11:38:49,272:INFO:Started continuous play mode.
+2024-07-01 11:39:03,216:INFO:Playing media: F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)\[HorribleSubs] Akame ga Kill! - 10 [480p].mkv
+2024-07-01 11:39:08,128:INFO:Toggled fullscreen mode: True
+2024-07-01 11:39:08,196:INFO:Toggled fullscreen mode: False
+2024-07-01 11:39:09,275:INFO:Toggled fullscreen mode: True
+2024-07-01 11:39:10,363:INFO:Toggled fullscreen mode: False
+2024-07-01 11:39:16,486:INFO:Stopped continuous play mode.
+2024-07-01 11:39:25,457:INFO:Created VLC_scheduler.txt in F:/@JAnime/Gyakkyou Burai Kaiji/Gyakkyou Burai Kaiji - Hakairoku Hen
+2024-07-01 11:39:25,466:INFO:Created VLC_scheduler.txt in F:/@JAnime/[HorribleSubs] Akame ga Kill! (01-24) [480p] (Batch)
+2024-07-01 11:39:25,471:INFO:Created VLC_scheduler.txt in F:/@JAnime/DanMachi/[VCB-Studio] DanMachi [720p]
+2024-07-01 11:39:25,477:INFO:Created VLC_scheduler.txt in F:/@JAnime/DanMachi/DanMachiS02
+2024-07-01 11:39:25,479:INFO:Created VLC_scheduler.txt in F:/@JAnime/Goblin Slayer/[UF+] GOBLIN SLAYER - 03 [WEBrip 720p]
+2024-07-01 11:39:25,485:INFO:Created VLC_scheduler.txt in F:/@JAnime/OnePunch Season 2
+2024-07-01 11:39:25,491:INFO:Created VLC_scheduler.txt in F:/@JAnime/Spy x Family
+2024-07-01 11:39:25,501:INFO:Created VLC_scheduler.txt in F:/@JAnime/Tensei shitara Slime Datta Ken
