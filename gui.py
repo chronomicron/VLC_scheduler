@@ -1,329 +1,270 @@
+# gui.py
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import configparser
-import vlc  # If you do not have vlc module installed, please use the command `pip install python-vlc`
+import vlc  # Ensure you have installed this package using `pip install python-vlc`
 import random
 import os
+import configparser
 from datetime import datetime
-import logging
-
-# Set up logging to write actions and errors to log.txt
-logging.basicConfig(filename='log.txt', level=logging.INFO, 
-                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 class VLC_GUI:
     def __init__(self, config, settings_file, vlc_instance):
         """
         Initialize the VLC_GUI class.
         
-        Args:
-            config (ConfigParser): The configuration parser to read settings from.
-            settings_file (str): The path to the settings.ini file.
-            vlc_instance (vlc.Instance): The VLC instance.
+        Parameters:
+        config (ConfigParser): Configuration parser object for settings.
+        settings_file (str): Path to the settings.ini file.
+        vlc_instance (vlc.Instance): VLC instance object.
         """
-        self.config = config  # Store the configuration parser
-        self.settings_file = settings_file  # Store the settings file path
-        self.vlc_instance = vlc_instance  # Store the VLC instance
+        # Store configuration and VLC instance
+        self.config = config
+        self.settings_file = settings_file
+        self.vlc_instance = vlc_instance
 
-        # Initialize the Tkinter root window
+        # Initialize VLC media player
+        self.player = vlc_instance.media_player_new()
+
+        # Flag to control continuous playback
+        self.is_playing = False
+
+        # Initialize the main window
         self.root = tk.Tk()
         self.root.title("VLC Scheduler")
-        
+
         # Create menu
         self.create_menu()
 
-        # Create and place frames
+        # Create frames
         self.create_frames()
 
-        # Load the scheduled times and paths from the configuration file
-        self.load_schedule()
-
-        # Initialize media player control attributes
-        self.player = None  # VLC media player instance
-        self.is_fullscreen = False  # Fullscreen toggle status
-        self.current_media = None  # Currently playing media file path
-        self.continuous_play = False  # Continuous play status
-        
-        # Initialize and place media control buttons
-        self.create_media_controls()
+        # Initialize the schedule
+        self.update_schedule_display()
 
     def create_menu(self):
-        """
-        Create the menu bar with File and Controls menus.
-        """
+        """Create the menu bar with File and Controls menus."""
         menubar = tk.Menu(self.root)
+
+        # File menu
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=filemenu)
+
+        # Controls menu
+        controlmenu = tk.Menu(menubar, tearoff=0)
+        controlmenu.add_command(label="Reinitialize", command=self.reinitialize)
+        menubar.add_cascade(label="Controls", menu=controlmenu)
+
         self.root.config(menu=menubar)
-        
-        file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label="Exit", command=self.root.quit)
-        menubar.add_cascade(label="File", menu=file_menu)
-        
-        controls_menu = tk.Menu(menubar, tearoff=0)
-        controls_menu.add_command(label="Reinitialize", command=self.reinitialize)
-        menubar.add_cascade(label="Controls", menu=controls_menu)
 
     def create_frames(self):
-        """
-        Create and place the three main frames in the GUI.
-        """
-        self.top_frame = ttk.LabelFrame(self.root, text="VLC Path", padding="10")
-        self.top_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-        
-        self.middle_frame = ttk.LabelFrame(self.root, text="Schedule", padding="10")
-        self.middle_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        
-        self.bottom_frame = ttk.LabelFrame(self.root, text="Controls", padding="10")
-        self.bottom_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        """Create the main frames in the GUI."""
+        self.path_frame = ttk.LabelFrame(self.root, text="Path to VLC player folder")
+        self.path_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
-    def load_schedule(self):
-        """
-        Load the scheduled times and paths from the configuration file
-        and create corresponding widgets in the GUI.
-        """
-        vlc_path_label = ttk.Label(self.top_frame, text="Path to VLC player folder:")
-        vlc_path_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
+        self.schedule_frame = ttk.LabelFrame(self.root, text="Schedule")
+        self.schedule_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-        vlc_path = self.config['Paths']['vlc_path']
-        self.vlc_path_entry = ttk.Entry(self.top_frame, width=50)
-        self.vlc_path_entry.insert(0, vlc_path)
-        self.vlc_path_entry.grid(row=0, column=1, padx=(0, 10), sticky="w")
+        self.control_frame = ttk.LabelFrame(self.root, text="Controls")
+        self.control_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
-        vlc_path_edit_button = ttk.Button(self.top_frame, text="Edit", command=self.edit_vlc_path)
-        vlc_path_edit_button.grid(row=0, column=2, sticky="w")
+        # VLC path input
+        self.vlc_path_var = tk.StringVar()
+        self.vlc_path_var.set(self.config['Paths']['vlc_path'])
+        self.vlc_path_entry = ttk.Entry(self.path_frame, textvariable=self.vlc_path_var, width=50)
+        self.vlc_path_entry.grid(row=0, column=0, padx=5, pady=5)
+
+        self.edit_vlc_path_button = ttk.Button(self.path_frame, text="Edit", command=self.edit_vlc_path)
+        self.edit_vlc_path_button.grid(row=0, column=1, padx=5, pady=5)
+
+        # Currently playing label
+        self.currently_playing_label = ttk.Label(self.control_frame, text="Currently playing: None")
+        self.currently_playing_label.grid(row=0, column=0, columnspan=6, sticky=tk.W, pady=(5, 5))
+
+        # Control buttons
+        self.play_button = ttk.Button(self.control_frame, text="Play", command=self.start_continuous_playback)
+        self.play_button.grid(row=1, column=0, padx=5, pady=5)
+
+        self.pause_button = ttk.Button(self.control_frame, text="Pause", command=self.pause_media)
+        self.pause_button.grid(row=1, column=1, padx=5, pady=5)
+
+        self.stop_button = ttk.Button(self.control_frame, text="Stop", command=self.stop_media)
+        self.stop_button.grid(row=1, column=2, padx=5, pady=5)
+
+        self.previous_button = ttk.Button(self.control_frame, text="Previous", command=self.previous_media)
+        self.previous_button.grid(row=1, column=3, padx=5, pady=5)
+
+        self.next_button = ttk.Button(self.control_frame, text="Next", command=self.next_media)
+        self.next_button.grid(row=1, column=4, padx=5, pady=5)
+
+        self.fullscreen_button = ttk.Button(self.control_frame, text="Fullscreen", command=self.toggle_fullscreen)
+        self.fullscreen_button.grid(row=1, column=5, padx=5, pady=5)
+
+    def update_schedule_display(self):
+        """Update the schedule display in the GUI."""
+        for widget in self.schedule_frame.winfo_children():
+            widget.destroy()
 
         row = 0
         for section in self.config.sections():
             if section.startswith('Schedule_'):
+                start_time = self.config[section]['start']
+                end_time = self.config[section]['stop']
+                path = self.config[section]['path']
+
+                # Display schedule information
+                ttk.Label(self.schedule_frame, text=f"{start_time} - {end_time}: {path}").grid(row=row, column=0, padx=5, pady=5, sticky=tk.W)
+
+                # Add edit button for each schedule
+                edit_button = ttk.Button(self.schedule_frame, text="Edit", command=lambda section=section: self.edit_schedule(section))
+                edit_button.grid(row=row, column=1, padx=5, pady=5)
+
                 row += 1
-                start_label = ttk.Label(self.middle_frame, text=f"Start: {self.config[section]['start']}")
-                start_label.grid(row=row, column=0, sticky="w")
-
-                stop_label = ttk.Label(self.middle_frame, text=f"Stop: {self.config[section]['stop']}")
-                stop_label.grid(row=row, column=1, sticky="w")
-
-                path_label = ttk.Label(self.middle_frame, text=f"Path: {self.config[section]['path']}")
-                path_label.grid(row=row, column=2, sticky="w")
-
-                edit_button = ttk.Button(self.middle_frame, text="Edit", command=lambda s=section: self.edit_schedule_path(s))
-                edit_button.grid(row=row, column=3, sticky="w")
-
-    def create_media_controls(self):
-        """
-        Create and place media control buttons in the GUI.
-        """
-        self.currently_playing_label = ttk.Label(self.bottom_frame, text="Currently playing: None")
-        self.currently_playing_label.grid(row=0, column=0, columnspan=6, sticky="w")
-
-        play_button = ttk.Button(self.bottom_frame, text="Play", command=self.start_continuous_play)
-        play_button.grid(row=1, column=0, padx=5, pady=5)
-
-        pause_button = ttk.Button(self.bottom_frame, text="Pause", command=self.pause_media)
-        pause_button.grid(row=1, column=1, padx=5, pady=5)
-
-        stop_button = ttk.Button(self.bottom_frame, text="Stop", command=self.stop_continuous_play)
-        stop_button.grid(row=1, column=2, padx=5, pady=5)
-
-        previous_button = ttk.Button(self.bottom_frame, text="Previous", command=self.previous_media)
-        previous_button.grid(row=1, column=3, padx=5, pady=5)
-
-        next_button = ttk.Button(self.bottom_frame, text="Next", command=self.next_media)
-        next_button.grid(row=1, column=4, padx=5, pady=5)
-
-        fullscreen_button = ttk.Button(self.bottom_frame, text="Fullscreen", command=self.toggle_fullscreen)
-        fullscreen_button.grid(row=1, column=5, padx=5, pady=5)
 
     def edit_vlc_path(self):
-        """
-        Open a file dialog to select the VLC path and update the configuration.
-        """
-        new_path = filedialog.askdirectory(title="Select VLC Path")
+        """Edit the VLC player path."""
+        new_path = filedialog.askdirectory(title="Select VLC Player Folder")
         if new_path:
-            self.vlc_path_entry.delete(0, tk.END)
-            self.vlc_path_entry.insert(0, new_path)
-            self.config.set('Paths', 'vlc_path', new_path)
+            self.vlc_path_var.set(new_path)
+            self.config['Paths']['vlc_path'] = new_path
             with open(self.settings_file, 'w') as configfile:
                 self.config.write(configfile)
-            logging.info(f"Updated VLC path to: {new_path}")
 
-    def edit_schedule_path(self, section):
-        """
-        Open a file dialog to select a new media path for the given schedule section.
-        
-        Args:
-            section (str): The schedule section to update.
-        """
-        new_path = filedialog.askdirectory(title="Select Media Path")
+    def edit_schedule(self, section):
+        """Edit the schedule path."""
+        new_path = filedialog.askdirectory(title="Select Folder for Schedule")
         if new_path:
-            self.config.set(section, 'path', new_path)
+            self.config[section]['path'] = new_path
             with open(self.settings_file, 'w') as configfile:
                 self.config.write(configfile)
-            self.load_schedule()  # Refresh the schedule display
-            logging.info(f"Updated {section} path to: {new_path}")
+            self.update_schedule_display()
 
-    def start_continuous_play(self):
-        """
-        Start continuous play mode where videos are played non-stop based on the schedule.
-        """
-        self.continuous_play = True
+    def start_continuous_playback(self):
+        """Start the continuous playback of media files."""
+        self.is_playing = True
         self.play_media()
-        logging.info("Started continuous play mode.")
 
     def play_media(self):
-        """
-        Play a random media file from the current schedule based on the current time.
-        """
+        """Play media based on the current schedule."""
+        if not self.is_playing:
+            return
+
         current_time = datetime.now().strftime("%H:%M")
+
         for section in self.config.sections():
             if section.startswith('Schedule_'):
                 start_time = self.config[section]['start']
-                stop_time = self.config[section]['stop']
-                if start_time <= current_time <= stop_time:
-                    media_path = self.config[section]['path']
-                    media_file = self.get_next_media_file(media_path)
+                end_time = self.config[section]['stop']
+
+                if start_time <= current_time <= end_time:
+                    path = self.config[section]['path']
+                    media_file = self.select_random_media(path)
+
                     if media_file:
-                        self.current_media = media_file
-                        self.play_file(media_file)
+                        media = self.vlc_instance.media_new(media_file)
+                        self.player.set_media(media)
+                        self.player.play()
+                        self.player.set_fullscreen(True)
+                        self.root.after(1000, lambda: self.update_currently_playing(media_file))
+                        break
                     else:
-                        messagebox.showerror("Error", f"No media files found in: {media_path}")
-                    break
+                        messagebox.showerror("Error", f"No media files found in {path}")
+                        self.log_action(f"Error: No media files found in {path}")
+                        break
 
-    def play_file(self, media_file):
-        """
-        Play the specified media file using VLC.
-        
-        Args:
-            media_file (str): The path to the media file to be played.
-        """
-        if self.player is None:
-            self.player = self.vlc_instance.media_player_new()
-            self.player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.on_media_end)
+        # Schedule to check if the media has ended every second
+        self.root.after(1000, self.check_media_end)
 
-        media = self.vlc_instance.media_new(media_file)
-        self.player.set_media(media)
-        self.player.play()
-        self.player.set_fullscreen(True)
-        self.player.set_always_on_top(True)
-        self.currently_playing_label.config(text=f"Currently playing: {os.path.basename(media_file)}")
-        logging.info(f"Playing media: {media_file}")
+    def update_currently_playing(self, media_file):
+        """Update the label to show the currently playing media file."""
+        self.currently_playing_label.config(text=f"Currently playing: {media_file}")
 
-    def get_next_media_file(self, media_path):
-        """
-        Get the next media file to play from the VLC_scheduler.txt file in the specified path.
-        
-        Args:
-            media_path (str): The path to the media folder.
-        
-        Returns:
-            str: The path to the next media file to be played.
-        """
-        schedule_file = os.path.join(media_path, 'VLC_scheduler.txt')
-        if not os.path.exists(schedule_file):
-            self.create_schedule_file(media_path)
-        
-        with open(schedule_file, 'r') as f:
-            media_files = f.readlines()
-        
-        if not media_files:
-            self.create_schedule_file(media_path)
-            with open(schedule_file, 'r') as f:
-                media_files = f.readlines()
+    def check_media_end(self):
+        """Check if the current media has ended and start the next one if necessary."""
+        if not self.is_playing:
+            return
 
-        media_files = [file.strip() for file in media_files if file.strip()]
-        if media_files:
-            next_file = random.choice(media_files)
-            media_files.remove(next_file)
-            with open(schedule_file, 'w') as f:
-                f.writelines(f"{file}\n" for file in media_files)
-            return os.path.join(media_path, next_file)
-        return None
-
-    def create_schedule_file(self, media_path):
-        """
-        Create the VLC_scheduler.txt file in the specified media path with a directory listing.
-        
-        Args:
-            media_path (str): The path to the media folder.
-        """
-        with open(os.path.join(media_path, 'VLC_scheduler.txt'), 'w') as f:
-            for item in os.listdir(media_path):
-                if os.path.isfile(os.path.join(media_path, item)):
-                    f.write(f"{item}\n")
-        logging.info(f"Created VLC_scheduler.txt in {media_path}")
-
-    def on_media_end(self, event):
-        """
-        Event handler for when a media file ends.
-        """
-        if self.continuous_play:
+        if self.player.is_playing():
+            self.root.after(1000, self.check_media_end)
+        else:
             self.play_media()
 
     def pause_media(self):
-        """
-        Pause the currently playing media.
-        """
-        if self.player is not None:
-            self.player.pause()
-            logging.info("Paused media.")
+        """Pause the current media."""
+        self.player.pause()
 
-    def stop_continuous_play(self):
-        """
-        Stop continuous play mode and the currently playing media.
-        """
-        if self.player is not None:
-            self.player.stop()
-        self.continuous_play = False
-        self.currently_playing_label.config(text="Currently playing: None")
-        logging.info("Stopped continuous play mode.")
-
-    def previous_media(self):
-        """
-        Play the previous media file (not implemented in this example).
-        """
-        pass
+    def stop_media(self):
+        """Stop the current media and stop the continuous playback."""
+        self.is_playing = False
+        self.player.stop()
 
     def next_media(self):
-        """
-        Play the next media file.
-        """
+        """Play the next media."""
+        self.play_media()
+
+    def previous_media(self):
+        """Play the previous media."""
         self.play_media()
 
     def toggle_fullscreen(self):
-        """
-        Toggle fullscreen mode for the VLC player.
-        """
-        if self.player is not None:
-            self.is_fullscreen = not self.is_fullscreen
-            self.player.toggle_fullscreen()
-            logging.info(f"Toggled fullscreen mode: {self.is_fullscreen}")
+        """Toggle fullscreen mode for the media player."""
+        self.player.toggle_fullscreen()
 
     def reinitialize(self):
-        """
-        Reinitialize by reading the settings.ini file and creating VLC_scheduler.txt files
-        in each schedule path with the directory listing.
-        """
+        """Reinitialize the VLC_scheduler.txt files for all schedules."""
         for section in self.config.sections():
             if section.startswith('Schedule_'):
                 path = self.config[section]['path']
-                if os.path.exists(path):
-                    self.create_schedule_file(path)
-                else:
-                    logging.error(f"Path does not exist: {path}")
+                self.create_vlc_scheduler_file(path)
+
+    def create_vlc_scheduler_file(self, path):
+        """Create or reinitialize the VLC_scheduler.txt file with the directory contents."""
+        media_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        vlc_scheduler_file = os.path.join(path, "VLC_scheduler.txt")
+
+        with open(vlc_scheduler_file, 'w') as f:
+            for file in media_files:
+                f.write(file + '\n')
+
+    def select_random_media(self, path):
+        """
+        Select a random media file from the VLC_scheduler.txt file.
+        
+        Parameters:
+        path (str): Path to the directory containing the VLC_scheduler.txt file.
+        
+        Returns:
+        str: Path to the selected media file.
+        """
+        vlc_scheduler_file = os.path.join(path, "VLC_scheduler.txt")
+
+        if not os.path.exists(vlc_scheduler_file):
+            # Create VLC_scheduler.txt if it doesn't exist
+            self.create_vlc_scheduler_file(path)
+
+        with open(vlc_scheduler_file, 'r') as f:
+            media_files = f.readlines()
+
+        if media_files:
+            # Select a random media file and remove it from the list
+            selected_media = random.choice(media_files).strip()
+            media_files.remove(selected_media + '\n')
+
+            # Update the VLC_scheduler.txt file
+            with open(vlc_scheduler_file, 'w') as f:
+                f.writelines(media_files)
+
+            return os.path.join(path, selected_media)
+        else:
+            # Reinitialize the VLC_scheduler.txt file if empty
+            self.create_vlc_scheduler_file(path)
+            return self.select_random_media(path)  # Retry after reinitialization
+
+    def log_action(self, message):
+        """Log actions and errors to a log file."""
+        with open("log.txt", "a") as log_file:
+            log_file.write(f"{datetime.now()}: {message}\n")
 
     def run(self):
-        """
-        Start the Tkinter main loop.
-        """
+        """Run the GUI application."""
         self.root.mainloop()
-
-if __name__ == "__main__":
-    # Load configuration from settings.ini
-    config = configparser.ConfigParser()
-    settings_file = 'settings.ini'
-    config.read(settings_file)
-
-    # Create a VLC instance
-    vlc_instance = vlc.Instance()
-
-    # Create and run the GUI application
-    app = VLC_GUI(config, settings_file, vlc_instance)
-    app.run()
