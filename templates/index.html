@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLC Scheduler</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>VLC Scheduler Web Interface</h1>
+    <div>
+        <h2>Currently Playing</h2>
+        <p id="currently_playing">None</p>
+    </div>
+    <div>
+        <button onclick="sendCommand('play')">Play</button>
+        <button onclick="sendCommand('pause')">Pause</button>
+        <button onclick="sendCommand('stop')">Stop</button>
+        <button onclick="sendCommand('next')">Next</button>
+        <button onclick="sendCommand('previous')">Previous</button>
+        <button onclick="sendCommand('fullscreen')">Fullscreen</button>
+    </div>
+    <script>
+        function updateStatus() {
+            $.getJSON('/status', function(data) {
+                $('#currently_playing').text(data.currently_playing);
+            });
+        }
+
+        function sendCommand(command) {
+            $.ajax({
+                url: '/control',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ command: command }),
+                success: function(response) {
+                    console.log(response);
+                    updateStatus();
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            updateStatus();
+            setInterval(updateStatus, 5000);
+        });
+    </script>
+</body>
+</html>
