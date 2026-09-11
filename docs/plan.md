@@ -10,17 +10,19 @@ systemd watchdog restarts the app if it hangs.
 
 ---
 
-## Open decisions (need answers before related phases can finish)
+## Open decisions
 
-- [?] Does the Tkinter GUI run locally on the Pi (risk of showing on the TV
-      output) or is it only ever accessed remotely (VNC/SSH/X-forwarding)?
-      Affects whether we need to hide/minimize it or keep it off the TV output
-      entirely.
-- [?] Heartbeat mechanism: heartbeat file + cron, systemd watchdog, or both?
-      (Leaning: both — systemd primary, heartbeat file for visibility/debugging
-      and exposed via /status.)
-- [?] Auto-start on boot via systemd `enable` — confirm yes/no once systemd
-      service is set up.
+- [x] GUI runs locally on the Pi but starts **minimized** on launch. Admin
+      (you) pops it up only for maintenance; day-to-day monitoring is via web.
+      99.9% of the time the Pi just plays media fullscreen for the senior.
+- [x] Heartbeat mechanism: **both** — systemd watchdog as primary restart
+      trigger, heartbeat file kept for visibility/debugging and exposed via
+      `/status` for remote monitoring.
+- [x] Dev machine is now Linux too (was Windows originally). All paths —
+      dev and deployment — move to normal Linux paths. No more Windows-style
+      `F:/...` paths or VLC install-folder config needed.
+- [?] Auto-start on boot via systemd `enable` — still to confirm once the
+      systemd service file exists (cheap to add, likely yes).
 - [?] Final settings.ini paths for real media library location(s) on the Pi.
 - [?] List of TV stream URLs to schedule (format: direct HTTP/HLS m3u8 links).
 - [?] YouTube playlist URLs the user will curate personally.
@@ -39,10 +41,11 @@ systemd watchdog restarts the app if it hangs.
       monitoring
 - [ ] Ensure app is idempotent on restart — always comes back up playing
       something (fallback if nothing else) within a few seconds
-- [ ] Decide + implement watchdog mechanism (systemd watchdog and/or cron +
-      heartbeat file check script)
-- [ ] systemd service file (Restart=on-failure, optional WatchdogSec=)
-- [ ] Decide on GUI visibility on the Pi's display (see open decision above)
+- [ ] Heartbeat file + cron check script (kills/restarts hung process)
+- [ ] systemd service file (Restart=on-failure + WatchdogSec, sd_notify pings)
+- [ ] systemd service enabled for boot start
+- [ ] GUI starts minimized (iconified) on launch — never blocks/covers the
+      video output
 
 ## Phase 1 — Core stability fixes
 
@@ -111,6 +114,10 @@ systemd watchdog restarts the app if it hangs.
   indefinitely.
 - Runs on Raspberry Pi / Raspbian, not Windows — auto-start via systemd, not
   Task Scheduler.
-- Cron/systemd watchdog restarts the app if it hangs; heartbeat mechanism
-  needed to detect hangs.
+- Watchdog: both cron (heartbeat file check) and systemd (Restart=on-failure +
+  WatchdogSec) — belt and suspenders.
+- GUI starts minimized; used only for occasional maintenance. Web interface is
+  the primary remote monitoring/control surface.
+- Dev environment is now Linux (was Windows during initial build) — all file
+  paths across settings.ini and code move to standard Linux paths.
   
