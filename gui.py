@@ -47,6 +47,12 @@ class VLC_GUI:
         self.root = tk.Tk()
         self.root.title("VLC Scheduler")
 
+        # Start minimized. This GUI is an admin/maintenance tool only — the
+        # end user never interacts with it, and it must never sit on top of
+        # (or behind, ambiguously) the fullscreen video output on the TV.
+        # Pop it back up yourself (e.g. via VNC) only when doing maintenance.
+        self.root.iconify()
+
         # StringVar to keep track of the currently playing media
         self.currently_playing = tk.StringVar()
         self.currently_playing.set("None")
