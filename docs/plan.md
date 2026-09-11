@@ -31,21 +31,43 @@ systemd watchdog restarts the app if it hangs.
 
 ## Phase 0 — Resilience foundations
 
-- [ ] Add `[Fallback]` section to settings.ini (local folder, always playable)
+- [x] Add `[Fallback]` section to settings.ini (local folder, always playable)
+      — schema added; not yet consumed by any code (see Phase 2)
 - [ ] Define failure hierarchy: scheduled source fails → retry a couple times
       → fall back to `[Fallback]` folder → never a blank/frozen screen
-- [ ] Remove all blocking UI from the runtime path (no `messagebox` popups that
-      wait for a click — log to file only)
-- [ ] Heartbeat: write timestamp to `heartbeat.txt` (or similar) every ~20-30s
+- [x] Remove all blocking UI from the runtime path (no `messagebox` popups that
+      wait for a click — log to file only) — turned out `messagebox` was
+      imported but never actually used anywhere; removed the dead import.
+      Nothing else in gui.py currently blocks on user input outside the
+      (non-runtime-path) folder picker in edit_schedule_path.
+- [x] Heartbeat: write timestamp to `heartbeat.txt` (or similar) every ~20-30s
+      — done in gui.py: write_heartbeat() writes a plain Unix epoch int every
+      30s via a recurring root.after() call, started at end of __init__
 - [ ] Expose heartbeat/last-updated time via `/status` endpoint for remote
       monitoring
 - [ ] Ensure app is idempotent on restart — always comes back up playing
       something (fallback if nothing else) within a few seconds
-- [ ] Heartbeat file + cron check script (kills/restarts hung process)
-- [ ] systemd service file (Restart=on-failure + WatchdogSec, sd_notify pings)
+- [x] Heartbeat file + cron check script (kills/restarts hung process) —
+      watchdog.sh created: checks if the app process is running at all, and
+      if its heartbeat.txt is missing/corrupt/older than 90s (one missed
+      write of buffer), kills and restarts it. Header includes the exact
+      crontab command to install it (every minute).
+- [x] systemd service file (Restart=on-failure) — vlc-scheduler.service
+      created, covers crash-restart + boot auto-start. Header has full
+      deploy steps (copy to /etc/systemd/system/, daemon-reload, enable,
+      start). Does NOT yet cover hangs (WatchdogSec/sd_notify) — see below.
+- [ ] systemd WatchdogSec + sd_notify pings from gui.py (covers hangs, not
+      just crashes — a step up from what's done above)
+- [x] Reconcile watchdog.sh with systemd: change its restart action from
+      manual pkill+nohup to `systemctl restart vlc-scheduler.service`, so
+      cron and systemd don't fight over restarting the same process — done.
+      watchdog.sh now checks `systemctl is-active` instead of pgrep, and
+      calls `systemctl start/restart` instead of managing the process
+      directly. Cron job now needs to run from ROOT's crontab (systemctl
+      restart requires root) — header updated accordingly.
 - [ ] systemd service enabled for boot start
-- [ ] GUI starts minimized (iconified) on launch — never blocks/covers the
-      video output
+- [x] GUI starts minimized (iconified) on launch — never blocks/covers the
+      video output — added `self.root.iconify()` in VLC_GUI.__init__
 
 ## Phase 1 — Core stability fixes
 
@@ -55,6 +77,8 @@ systemd watchdog restarts the app if it hangs.
 - [x] VLC_scheduler.py: removed the matching /edit_path Flask route (same
       reason — [Paths] section and vlc_gui_instance.path_entry both gone),
       dropped the now-unused tkinter import, added file header docstring
+- [x] index.html: added file header comment (no functional changes needed —
+      it never referenced the old [Paths]/edit_path concept)
 - [ ] Fix GUI/Flask startup race (readiness flag before Flask serves control
       routes — currently `vlc_gui_instance` may not exist yet when a request
       comes in)
