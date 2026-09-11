@@ -37,7 +37,7 @@ import vlc
 import configparser
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 from datetime import datetime
 
 class VLC_GUI:
