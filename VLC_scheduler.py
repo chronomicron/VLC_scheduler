@@ -1,9 +1,35 @@
+"""
+VLC_scheduler.py — VLC Scheduler entry point / web server
+
+What this file does:
+    The main entry point for the app. Starts the Tkinter admin GUI (gui.py)
+    on a background thread, then runs a Flask web server on the main thread
+    exposing status and playback controls for remote monitoring — this is
+    the primary way you (the admin) check on and control the scheduler
+    day-to-day, without needing to touch the Pi or the GUI directly.
+
+How it's run:
+    From the project folder, on the Raspberry Pi (or any Linux machine with
+    VLC + the dependencies installed):
+
+        python3 VLC_scheduler.py
+
+    Then visit http://<pi-ip-address>:5000/ in a browser to monitor/control
+    it remotely, or http://127.0.0.1:5000/ if browsing from the Pi itself.
+
+    Requires: flask, python-vlc, VLC itself installed on the system, and a
+    settings.ini file in the same folder (see settings.ini's own header for
+    its schema).
+
+Platform:
+    Linux (Raspberry Pi / Raspbian).
+"""
+
 from flask import Flask, render_template, jsonify, request
 import vlc
 from gui import VLC_GUI
 import configparser
 import threading
-import tkinter as tk
 
 
 # Configuration file path
@@ -62,18 +88,6 @@ def control():
         vlc_gui_instance.toggle_fullscreen()
     return jsonify({"status": "success"})
 
-@app.route('/edit_path', methods=['POST'])
-def edit_path():
-    # Handle path editing from the web interface
-    new_path = request.json['new_path']
-    config['Paths']['vlc'] = new_path
-    with open(settings_file, 'w') as configfile:
-        config.write(configfile)
-    shared_state['config'] = config
-    vlc_gui_instance.path_entry.delete(0, tk.END)
-    vlc_gui_instance.path_entry.insert(0, new_path)
-    return jsonify({"status": "success"})
-
 @app.route('/edit_schedule_path/<section>', methods=['POST'])
 def edit_schedule_path(section):
     # Handle schedule path editing from the web interface
@@ -88,3 +102,4 @@ def edit_schedule_path(section):
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
+    
