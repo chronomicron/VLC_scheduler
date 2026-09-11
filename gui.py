@@ -157,6 +157,16 @@ class VLC_GUI:
         # Create a frame for the schedule
         # NOTE: this used to be row=1 (below the now-removed VLC path frame).
         # It's row=0 now since that frame is gone.
+        #
+        # This method gets called more than once at runtime (e.g. whenever
+        # /edit_schedule_path is hit), not just at startup. Without
+        # destroying the previous frame first, each call used to leave the
+        # old LabelFrame and all its child widgets sitting around in memory
+        # while a new one was gridded into the same cell on top of it —
+        # overlapping/duplicate widgets that got worse with every edit.
+        if hasattr(self, 'schedule_frame'):
+            self.schedule_frame.destroy()
+
         self.schedule_frame = tk.LabelFrame(self.root, text="Schedule")
         self.schedule_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
