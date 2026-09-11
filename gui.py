@@ -21,6 +21,10 @@ How it's instantiated:
         vlc_instance  - a vlc.Instance() (from python-vlc)
         shared_state  - a dict shared with the Flask app for cross-thread status
 
+    Also writes heartbeat.txt (a plain Unix timestamp) every 30s while
+    running, so an external watchdog (cron, systemd) can detect a hang and
+    restart the app — see plan.md Phase 0.
+
 Platform:
     Linux (Raspberry Pi / Raspbian). Previously targeted Windows during early
     development (see settings.ini history) — that is no longer the case.
@@ -28,6 +32,7 @@ Platform:
 
 import os
 import random
+import time
 import vlc
 import configparser
 import tkinter as tk
@@ -76,6 +81,32 @@ class VLC_GUI:
 
         # Handle window close event
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Start the heartbeat: proof-of-life for external monitoring (cron
+        # job, /status endpoint, etc). Written on a recurring Tkinter timer
+        # rather than tied to playback, so it reflects "the app is alive and
+        # its event loop is running," not "media happens to be playing."
+        self.heartbeat_file = 'heartbeat.txt'
+        self.heartbeat_interval_ms = 30000  # 30 seconds
+        self.write_heartbeat()
+
+    def write_heartbeat(self):
+        # Write the current Unix timestamp to the heartbeat file, then
+        # schedule the next write. A monitoring script (e.g. cron) can check
+        # this file's contents' age to detect a hung or crashed app and
+        # trigger a restart. Plain epoch integer, not JSON — kept as simple
+        # as possible since this is a health signal, not a data payload.
+        try:
+            with open(self.heartbeat_file, 'w') as f:
+                f.write(str(int(time.time())))
+        except OSError:
+            # Don't let a heartbeat write failure (e.g. disk full, bad
+            # permissions) crash the app — if writes keep failing, the file
+            # will simply go stale and the external monitor will restart us,
+            # which is the correct outcome anyway.
+            pass
+
+        self.root.after(self.heartbeat_interval_ms, self.write_heartbeat)
 
     def create_menu(self):
         # Create the menu bar

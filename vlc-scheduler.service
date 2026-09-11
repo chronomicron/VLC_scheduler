@@ -1,0 +1,77 @@
+# vlc-scheduler.service — systemd unit for VLC Scheduler
+#
+# What this file does:
+#   Runs VLC_scheduler.py as a managed systemd service. Gives us two things
+#   the cron-based watchdog.sh doesn't cover on its own:
+#     1. Auto-restart the instant the process crashes/exits (Restart=on-failure),
+#        rather than waiting up to a minute for the next cron tick.
+#     2. Optional auto-start on boot (systemctl enable), so a power cut on the
+#        Pi recovers on its own without anyone needing to log in or run
+#        anything by hand.
+#
+#   NOTE: this covers *crashes* (process exits). It does NOT yet cover
+#   *hangs* (process alive but frozen) — that's what watchdog.sh + the
+#   heartbeat file are for. A true systemd watchdog (WatchdogSec + sd_notify
+#   pings from inside gui.py) would cover hangs too, but that's a separate,
+#   slightly bigger step — see plan.md.
+#
+#   IMPORTANT: once this service exists, watchdog.sh's current "pkill +
+#   nohup" restart approach will conflict with systemd (systemd will try to
+#   restart the same process cron just killed, possibly resulting in two
+#   instances). watchdog.sh needs a small follow-up change to call
+#   `systemctl restart vlc-scheduler.service` instead once this is deployed —
+#   don't enable both at once until that's done.
+#
+# How it's deployed (one-time setup on the Raspberry Pi):
+#
+#   1. Edit the [Service] section below — update User, WorkingDirectory,
+#      ExecStart, and the DISPLAY/XAUTHORITY values if your setup differs
+#      from the defaults (a Pi auto-logging into the desktop as user "pi").
+#
+#   2. Copy this file into systemd's unit directory:
+#        sudo cp vlc-scheduler.service /etc/systemd/system/vlc-scheduler.service
+#
+#   3. Reload systemd so it picks up the new unit file:
+#        sudo systemctl daemon-reload
+#
+#   4. Enable it to start automatically on boot:
+#        sudo systemctl enable vlc-scheduler.service
+#
+#   5. Start it right now (without needing a reboot):
+#        sudo systemctl start vlc-scheduler.service
+#
+#   Useful commands afterward:
+#     sudo systemctl status vlc-scheduler.service      # check if it's running
+#     sudo systemctl restart vlc-scheduler.service     # manual restart
+#     sudo systemctl stop vlc-scheduler.service        # manual stop
+#     sudo systemctl disable vlc-scheduler.service     # turn off boot auto-start
+#     journalctl -u vlc-scheduler.service -f           # follow its logs live
+#
+# Platform:
+#   Linux (Raspberry Pi / Raspbian), assumes systemd (Raspbian's default).
+
+[Unit]
+Description=VLC Scheduler (scheduled media playback + web control)
+# Wait for the graphical desktop (X server) to be up, since this app opens
+# a Tkinter window and plays fullscreen video — starting before a display
+# exists would just fail.
+After=graphical.target network.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/vlc_scheduler
+ExecStart=/usr/bin/python3 /home/pi/vlc_scheduler/VLC_scheduler.py
+
+# Needed so the Tkinter GUI and VLC's video output can attach to the Pi's
+# desktop session. Adjust if your display/user setup differs.
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+
+# Restart automatically if it crashes, but not in a tight failure loop.
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
