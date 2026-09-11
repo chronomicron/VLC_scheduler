@@ -86,18 +86,21 @@ def control():
     if not gui_ready.is_set():
         return jsonify({"status": "error", "message": "GUI is still starting up, try again in a moment"}), 503
     command = request.json['command']
+    # Each of these is marshaled onto the GUI thread via run_on_gui_thread()
+    # rather than called directly — Flask runs on its own thread, and these
+    # methods touch Tkinter widgets, which isn't thread-safe otherwise.
     if command == 'play':
-        vlc_gui_instance.play_media()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.play_media)
     elif command == 'pause':
-        vlc_gui_instance.pause_media()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.pause_media)
     elif command == 'stop':
-        vlc_gui_instance.stop_media()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.stop_media)
     elif command == 'next':
-        vlc_gui_instance.next_media()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.next_media)
     elif command == 'previous':
-        vlc_gui_instance.previous_media()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.previous_media)
     elif command == 'fullscreen':
-        vlc_gui_instance.toggle_fullscreen()
+        vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.toggle_fullscreen)
     return jsonify({"status": "success"})
 
 @app.route('/edit_schedule_path/<section>', methods=['POST'])
@@ -110,7 +113,7 @@ def edit_schedule_path(section):
     with open(settings_file, 'w') as configfile:
         config.write(configfile)
     shared_state['config'] = config
-    vlc_gui_instance.create_schedule_frame()
+    vlc_gui_instance.run_on_gui_thread(vlc_gui_instance.create_schedule_frame)
     return jsonify({"status": "success"})
 
 # Run the Flask app

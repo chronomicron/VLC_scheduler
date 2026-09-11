@@ -28,6 +28,12 @@ How it's instantiated:
     running, so an external watchdog (cron, systemd) can detect a hang and
     restart the app — see plan.md Phase 0.
 
+    Thread safety: Tkinter widgets may only be touched from the thread
+    running root.mainloop(). Since VLC_scheduler.py's Flask server runs on
+    its own thread, it must not call playback methods (play_media, etc.)
+    directly — use run_on_gui_thread(func, *args) instead, which marshals
+    the call onto the GUI thread via root.after(0, ...).
+
 Platform:
     Linux (Raspberry Pi / Raspbian). Previously targeted Windows during early
     development (see settings.ini history) — that is no longer the case.
@@ -121,6 +127,18 @@ class VLC_GUI:
             pass
 
         self.root.after(self.heartbeat_interval_ms, self.write_heartbeat)
+
+    def run_on_gui_thread(self, func, *args):
+        # Tkinter is not thread-safe — widgets (StringVars, labels, etc.)
+        # must only be touched from the thread running root.mainloop().
+        # Flask, however, runs on its own thread and needs to trigger
+        # playback actions (play/pause/stop/...) that touch those widgets.
+        #
+        # root.after(0, ...) schedules a callback to run on the GUI's own
+        # event loop at its next opportunity, which is the standard way to
+        # safely hand work from another thread over to Tkinter. Call this
+        # instead of calling e.g. self.play_media() directly from Flask.
+        self.root.after(0, lambda: func(*args))
 
     def create_menu(self):
         # Create the menu bar
