@@ -20,6 +20,9 @@ How it's instantiated:
         settings_file - path to settings.ini, so edits can be written back
         vlc_instance  - a vlc.Instance() (from python-vlc)
         shared_state  - a dict shared with the Flask app for cross-thread status
+        gui_ready     - (optional) a threading.Event, set once __init__
+                        finishes, so the Flask thread knows it's safe to call
+                        into vlc_gui_instance — see VLC_scheduler.py
 
     Also writes heartbeat.txt (a plain Unix timestamp) every 30s while
     running, so an external watchdog (cron, systemd) can detect a hang and
@@ -41,12 +44,18 @@ from tkinter import filedialog
 from datetime import datetime
 
 class VLC_GUI:
-    def __init__(self, config, settings_file, vlc_instance, shared_state):
+    def __init__(self, config, settings_file, vlc_instance, shared_state, gui_ready=None):
         # Initialize the VLC GUI with configuration, settings file, VLC instance, and shared state
         self.config = config
         self.settings_file = settings_file
         self.vlc_instance = vlc_instance
         self.shared_state = shared_state
+
+        # Optional threading.Event, set once this __init__ finishes building
+        # everything below. Lets VLC_scheduler.py's Flask routes check
+        # "is the GUI actually ready?" before calling into vlc_gui_instance,
+        # instead of racing against GUI construction on a separate thread.
+        self.gui_ready = gui_ready
 
         # Initialize the main Tkinter window
         self.root = tk.Tk()
@@ -89,6 +98,11 @@ class VLC_GUI:
         self.heartbeat_file = 'heartbeat.txt'
         self.heartbeat_interval_ms = 30000  # 30 seconds
         self.write_heartbeat()
+
+        # Everything above is now fully constructed — safe for other threads
+        # (the Flask web server) to start calling into this instance.
+        if self.gui_ready is not None:
+            self.gui_ready.set()
 
     def write_heartbeat(self):
         # Write the current Unix timestamp to the heartbeat file, then

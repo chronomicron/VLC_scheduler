@@ -21,6 +21,9 @@ How it's run:
     settings.ini file in the same folder (see settings.ini's own header for
     its schema).
 
+    A threading.Event (gui_ready) guards against the Flask routes below
+    being hit before the GUI thread has finished starting up — see gui.py.
+
 Platform:
     Linux (Raspberry Pi / Raspbian).
 """
@@ -47,10 +50,17 @@ shared_state = {
 # Create a VLC instance
 vlc_instance = vlc.Instance()
 
+# Set once the GUI thread has fully finished constructing vlc_gui_instance.
+# The Flask routes below check this before touching vlc_gui_instance, so a
+# request arriving during startup gets a clear "not ready yet" response
+# instead of a NameError/crash from hitting an instance that doesn't exist
+# yet.
+gui_ready = threading.Event()
+
 # Initialize the Tkinter GUI in a separate thread
 def run_gui():
     global vlc_gui_instance
-    vlc_gui_instance = VLC_GUI(config, settings_file, vlc_instance, shared_state)
+    vlc_gui_instance = VLC_GUI(config, settings_file, vlc_instance, shared_state, gui_ready)
     vlc_gui_instance.root.mainloop()
 
 # Start the GUI thread
@@ -73,6 +83,8 @@ def status():
 @app.route('/control', methods=['POST'])
 def control():
     # Handle media control commands
+    if not gui_ready.is_set():
+        return jsonify({"status": "error", "message": "GUI is still starting up, try again in a moment"}), 503
     command = request.json['command']
     if command == 'play':
         vlc_gui_instance.play_media()
@@ -91,6 +103,8 @@ def control():
 @app.route('/edit_schedule_path/<section>', methods=['POST'])
 def edit_schedule_path(section):
     # Handle schedule path editing from the web interface
+    if not gui_ready.is_set():
+        return jsonify({"status": "error", "message": "GUI is still starting up, try again in a moment"}), 503
     new_path = request.json['new_path']
     config[section]['path'] = new_path
     with open(settings_file, 'w') as configfile:
