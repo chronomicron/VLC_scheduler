@@ -49,6 +49,12 @@ systemd watchdog restarts the app if it hangs.
 
 ## Phase 1 — Core stability fixes
 
+- [x] gui.py: removed Windows-only "Path to VLC player folder" frame and its
+      edit_path() method (settings.ini no longer has a [Paths] section on
+      Linux) — frames re-gridded to fill the gap, added file header docstring
+- [x] VLC_scheduler.py: removed the matching /edit_path Flask route (same
+      reason — [Paths] section and vlc_gui_instance.path_entry both gone),
+      dropped the now-unused tkinter import, added file header docstring
 - [ ] Fix GUI/Flask startup race (readiness flag before Flask serves control
       routes — currently `vlc_gui_instance` may not exist yet when a request
       comes in)
