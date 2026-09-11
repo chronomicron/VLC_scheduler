@@ -79,16 +79,29 @@ systemd watchdog restarts the app if it hangs.
       dropped the now-unused tkinter import, added file header docstring
 - [x] index.html: added file header comment (no functional changes needed —
       it never referenced the old [Paths]/edit_path concept)
-- [ ] Fix GUI/Flask startup race (readiness flag before Flask serves control
-      routes — currently `vlc_gui_instance` may not exist yet when a request
-      comes in)
-- [ ] Fix cross-thread calls — marshal Flask-triggered actions onto the GUI
-      thread via `root.after(0, ...)` instead of calling directly
+- [x] Fix GUI/Flask startup race — added a `threading.Event` (gui_ready),
+      created in VLC_scheduler.py, passed into VLC_GUI, set at the very end
+      of its __init__ once everything's built. /control and
+      /edit_schedule_path now check gui_ready.is_set() first and return a
+      clean 503 instead of crashing with a NameError if hit too early.
+- [x] Fix cross-thread calls — added `run_on_gui_thread(func, *args)` helper
+      in gui.py (wraps `self.root.after(0, ...)`). VLC_scheduler.py's
+      /control route now marshals all playback commands (play/pause/stop/
+      next/previous/fullscreen) through it instead of calling
+      vlc_gui_instance methods directly; /edit_schedule_path's call to
+      create_schedule_frame() marshaled the same way. Verified the
+      queue/defer pattern works correctly with an isolated simulation.
 - [ ] Add proper `logging` module setup (rotating file handler + console)
 - [ ] Add error handling around Flask routes (bad/missing JSON keys, missing
       config sections, missing folders/files)
-- [ ] Fix `create_schedule_frame()` — currently rebuilds without destroying
-      old widgets first, likely causing duplicate widgets stacking up
+- [x] Fix `create_schedule_frame()` — added `if hasattr(self, 'schedule_frame'):
+      self.schedule_frame.destroy()` at the top, before building the new
+      frame. Previously each call (now more frequent since /edit_schedule_path
+      calls it at runtime via run_on_gui_thread) left the old frame + all its
+      child widgets alive, stacking duplicates in the same grid cell.
+      Verified the destroy/rebuild control flow with a mock-widget
+      simulation (no real Tkinter display available in this sandbox — real
+      visual confirmation still needed once running on the Pi).
 - [ ] Review `debug=True` / network binding — should not be exposed with
       Werkzeug debugger on if reachable beyond localhost
 
