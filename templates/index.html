@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+    index.html — VLC Scheduler web interface
+
+    What this file does:
+        The single-page web UI served at "/" by VLC_scheduler.py (Flask).
+        Shows what's currently playing and provides playback controls (play,
+        pause, stop, next, previous, fullscreen) that call the Flask
+        /control endpoint. Polls /status every 5 seconds to stay current.
+
+    How it's used:
+        Not opened directly as a file — rendered by Flask's render_template()
+        when you visit http://<host>:5000/ in a browser while
+        VLC_scheduler.py is running. Must live in a "templates/" folder next
+        to VLC_scheduler.py for Flask to find it.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
