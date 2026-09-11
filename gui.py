@@ -1,3 +1,31 @@
+"""
+gui.py — VLC Scheduler Tkinter admin/monitoring GUI
+
+What this file does:
+    Defines VLC_GUI, a Tkinter window that displays and edits the schedule
+    from settings.ini, and drives the actual VLC playback (play/pause/stop/
+    next/previous/fullscreen). This is the admin-facing control surface —
+    day-to-day monitoring is meant to happen via the web interface
+    (VLC_scheduler.py), not this window. This GUI is only needed for local
+    maintenance on the Raspberry Pi itself.
+
+How it's instantiated:
+    Not run directly — VLC_scheduler.py creates it on a background thread:
+
+        vlc_gui_instance = VLC_GUI(config, settings_file, vlc_instance, shared_state)
+        vlc_gui_instance.root.mainloop()
+
+    Requires:
+        config        - a configparser.ConfigParser() with settings.ini loaded
+        settings_file - path to settings.ini, so edits can be written back
+        vlc_instance  - a vlc.Instance() (from python-vlc)
+        shared_state  - a dict shared with the Flask app for cross-thread status
+
+Platform:
+    Linux (Raspberry Pi / Raspbian). Previously targeted Windows during early
+    development (see settings.ini history) — that is no longer the case.
+"""
+
 import os
 import random
 import vlc
@@ -32,7 +60,10 @@ class VLC_GUI:
         self.create_menu()
 
         # Create GUI components
-        self.create_path_frame()
+        # NOTE: the old "Path to VLC player folder" frame has been removed.
+        # It only made sense on Windows, where VLC's install location had to
+        # be pointed at manually. On Linux, python-vlc finds the system-
+        # installed VLC automatically, so there's nothing to configure here.
         self.create_schedule_frame()
         self.create_controls_frame()
         self.create_currently_playing_label()
@@ -53,22 +84,12 @@ class VLC_GUI:
         
         self.root.config(menu=menubar)
 
-    def create_path_frame(self):
-        # Create a frame for the VLC path
-        path_frame = tk.LabelFrame(self.root, text="Path to VLC player folder")
-        path_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
-
-        self.path_entry = tk.Entry(path_frame, width=50)
-        self.path_entry.insert(0, self.config['Paths']['vlc'])
-        self.path_entry.grid(row=0, column=0, padx=10, pady=10)
-
-        edit_button = tk.Button(path_frame, text="Edit", command=self.edit_path)
-        edit_button.grid(row=0, column=1, padx=10, pady=10)
-
     def create_schedule_frame(self):
         # Create a frame for the schedule
+        # NOTE: this used to be row=1 (below the now-removed VLC path frame).
+        # It's row=0 now since that frame is gone.
         self.schedule_frame = tk.LabelFrame(self.root, text="Schedule")
-        self.schedule_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        self.schedule_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
         for i, section in enumerate([s for s in self.config.sections() if s.startswith('Schedule_')]):
             start_label = tk.Label(self.schedule_frame, text=f"{section} start time:")
@@ -97,8 +118,9 @@ class VLC_GUI:
 
     def create_controls_frame(self):
         # Create a frame for the media controls
+        # NOTE: row shifted from 2 -> 1 now that the VLC path frame is gone.
         controls_frame = tk.LabelFrame(self.root, text="Controls")
-        controls_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        controls_frame.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
         play_button = tk.Button(controls_frame, text="Play", command=self.play_media)
         play_button.grid(row=0, column=0, padx=5, pady=5)
@@ -120,19 +142,12 @@ class VLC_GUI:
 
     def create_currently_playing_label(self):
         # Create a label to display the currently playing media
+        # NOTE: row shifted from 3 -> 2 now that the VLC path frame is gone.
         currently_playing_frame = tk.LabelFrame(self.root, text="Currently Playing")
-        currently_playing_frame.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+        currently_playing_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
         self.currently_playing_label = tk.Label(currently_playing_frame, textvariable=self.currently_playing)
         self.currently_playing_label.grid(row=0, column=0, padx=5, pady=5)
-
-    def edit_path(self):
-        # Edit the VLC path
-        new_path = self.path_entry.get()
-        self.config['Paths']['vlc'] = new_path
-        with open(self.settings_file, 'w') as configfile:
-            self.config.write(configfile)
-        self.shared_state['config'] = self.config
 
     def edit_schedule_path(self, section):
         # Edit the path for a schedule
@@ -240,3 +255,4 @@ class VLC_GUI:
         # Handle the window close event
         self.stop_media()
         self.root.destroy()
+        
